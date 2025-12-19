@@ -11,7 +11,7 @@ app.get('/api/ping', async (req, res) => {
     const PUB_ID = "ADO0048";
     
     // The exact URL structure you verified
-    const targetUrl = `https://rtb.retreaver.com/rtbs.json?key=${API_KEY}&publisher_id=${PUB_ID}&caller_number=${encodeURIComponent(caller_number)}`;
+    const targetUrl = `https://rtb.retreaver.com/rtbs.json?key=${API_KEY}&publisher_id=${PUB_ID}}`;
 
     try {
         const response = await fetch(targetUrl, {
@@ -25,3 +25,4 @@ app.get('/api/ping', async (req, res) => {
 });
 
 app.listen(PORT, () => console.log(`Server live on port ${PORT}`));
+
