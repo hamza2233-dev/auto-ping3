@@ -1,36 +1,54 @@
-const express = require("express");
-const fetch = require("node-fetch");
-const path = require("path");
-
+const express = require('express');
+const path = require('path');
 const app = express();
-const PORT = process.env.PORT || 10000;
+const PORT = process.env.PORT || 3000;
 
-app.get("/", (req, res) => {
-  res.sendFile(path.join(__dirname, "index.html"));
+app.use(express.static(__dirname));
+
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
 });
 
-app.get("/check", async (req, res) => {
-  const caller = req.query.caller_number;
+app.get('/api/ping', async (req, res) => {
+    const caller_number = req.query.caller_number;
+    
+    // Credentials
+    const API_KEY = "5de2b0c6-7b91-4bad-82c3-b3dab875ebd8";
+    const PUB_ID = "ADO0048";
+    
+    // FIXED URL: Added the '&' and used the verified RTB subdomain
+    const targetUrl = `https://rtb.retreaver.com/rtbs.json?key=${API_KEY}&publisher_id=${PUB_ID}&caller_number=${encodeURIComponent(caller_number)}`;
 
-  if (!caller) {
-    return res.send("caller_number is required");
-  }
+    console.log(`Outgoing Ping: ${targetUrl}`);
 
-  const url =
-    "https://rtb.retreaver.com/rtbs.json" +
-    "?key=5de2b0c6-7b91-4bad-82c3-b3dab875ebd8" +
-    "&publisher_id=ADO0048" +
-    `&caller_number=${caller}`;
+    try {
+        const response = await fetch(targetUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'RetreaverProxy/1.0' 
+            }
+        });
 
-  try {
-    const response = await fetch(url);
-    const data = await response.text();
-    res.send(data);
-  } catch (err) {
-    res.send("Error calling Retreaver API");
-  }
+        const text = await response.text();
+        
+        try {
+            const data = JSON.parse(text);
+            res.json(data);
+        } catch (e) {
+            // If Retreaver sends HTML, this catches it and tells us why
+            console.error("Retreaver returned non-JSON response.");
+            res.status(response.status).json({ 
+                error: "Retreaver Error", 
+                status: response.status,
+                details: text.substring(0, 200) // Show first bit of error
+            });
+        }
+    } catch (error) {
+        res.status(500).json({ error: "Server connection failed", message: error.message });
+    }
 });
 
 app.listen(PORT, () => {
-  console.log(`Running on port ${PORT}`);
+    console.log(`Server is running on port ${PORT}`);
 });
