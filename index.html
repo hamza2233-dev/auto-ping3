@@ -1,0 +1,38 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Retreaver Tester</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; background: #f4f4f9; display: flex; justify-content: center; }
+        .card { background: white; padding: 30px; border-radius: 8px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); width: 100%; max-width: 500px; }
+        input { width: 100%; padding: 12px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
+        button { width: 100%; padding: 12px; background: #007bff; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
+        pre { background: #222; color: #7f7; padding: 15px; border-radius: 4px; overflow-x: auto; margin-top: 20px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>Retreaver Live Tester</h2>
+        <input type="text" id="num" placeholder="+15551234567" value="+1">
+        <button onclick="send()">Fire Ping</button>
+        <pre id="res">Response will appear here...</pre>
+    </div>
+
+    <script>
+        async function send() {
+            const num = document.getElementById('num').value;
+            const resBox = document.getElementById('res');
+            resBox.innerText = "Sending...";
+            
+            try {
+                // Calls your OWN server's API route
+                const response = await fetch(`/api/ping?caller_number=${encodeURIComponent(num)}`);
+                const data = await response.json();
+                resBox.innerText = JSON.stringify(data, null, 2);
+            } catch (e) {
+                resBox.innerText = "Error: " + e.message;
+            }
+        }
+    </script>
+</body>
+</html>
