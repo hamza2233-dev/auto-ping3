@@ -1,33 +1,30 @@
-const express = require('express');
-const path = require('path');
-const app = express();
-const PORT = process.env.PORT || 3000;
-
-// Tell Express to serve static files from the ROOT directory
-app.use(express.static(__dirname));
-
-// Specifically handle the home page request
-app.get('/', (req, res) => {
-    res.sendFile(path.join(__dirname, 'index.html'));
-});
-
-// Your Retreaver Proxy Route
 app.get('/api/ping', async (req, res) => {
     const caller_number = req.query.caller_number;
+    
+    // Check if these are 100% correct in your Retreaver Dashboard
     const API_KEY = "5de2b0c6-7b91-4bad-82c3-b3dab875ebd8";
     const PUB_ID = "ADO0048";
     
     const targetUrl = `https://rtb.retreaver.com/rtbs.json?key=${API_KEY}&publisher_id=${PUB_ID}&caller_number=${encodeURIComponent(caller_number)}`;
 
     try {
-        const response = await fetch(targetUrl);
-        const data = await response.json();
-        res.json(data);
-    } catch (error) {
-        res.status(500).json({ error: "Retreaver connection failed" });
-    }
-});
+        const response = await fetch(targetUrl, {
+            method: 'GET',
+            headers: {
+                'Accept': 'application/json',
+                'User-Agent': 'RetreaverTester/1.0' // Adding a User-Agent can help bypass "Sign In" blocks
+            }
+        });
 
-app.listen(PORT, () => {
-    console.log(`Server running on port ${PORT}`);
+        // If Retreaver sends a non-JSON error, we want to see it
+        const text = await response.text();
+        try {
+            const data = JSON.parse(text);
+            res.json(data);
+        } catch (e) {
+            res.status(response.status).send(`Server Error: ${text}`);
+        }
+    } catch (error) {
+        res.status(500).json({ error: "Connection Failed", details: error.message });
+    }
 });
