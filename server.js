@@ -3,10 +3,15 @@ const path = require('path');
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-// Serve static files (your HTML) from the "public" folder
-app.use(express.static('public'));
+// Tell Express to serve static files from the ROOT directory
+app.use(express.static(__dirname));
 
-// The Proxy Route
+// Specifically handle the home page request
+app.get('/', (req, res) => {
+    res.sendFile(path.join(__dirname, 'index.html'));
+});
+
+// Your Retreaver Proxy Route
 app.get('/api/ping', async (req, res) => {
     const caller_number = req.query.caller_number;
     const API_KEY = "5de2b0c6-7b91-4bad-82c3-b3dab875ebd8";
