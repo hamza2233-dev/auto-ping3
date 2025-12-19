@@ -2,36 +2,70 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <title>Retreaver RTB Ping Tool</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Retreaver RTB Tester</title>
     <style>
-        body { font-family: sans-serif; padding: 40px; background: #f4f7f6; }
-        .card { background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); max-width: 500px; margin: auto; }
-        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #ddd; border-radius: 4px; box-sizing: border-box; }
-        button { width: 100%; padding: 10px; background: #2ecc71; color: white; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; }
-        #result { margin-top: 20px; padding: 15px; background: #333; color: #0f0; border-radius: 4px; font-family: monospace; font-size: 12px; white-space: pre-wrap; display: none; }
+        :root { --primary: #2ecc71; --dark: #2c3e50; --bg: #f4f7f6; }
+        body { font-family: 'Segoe UI', sans-serif; background: var(--bg); display: flex; justify-content: center; padding-top: 50px; }
+        .container { background: white; padding: 30px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); width: 100%; max-width: 450px; }
+        h2 { color: var(--dark); margin-bottom: 20px; text-align: center; }
+        .form-group { margin-bottom: 15px; }
+        label { display: block; margin-bottom: 5px; font-weight: 600; color: #555; }
+        input { width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 6px; box-sizing: border-box; font-size: 16px; transition: border-color 0.3s; }
+        input:focus { border-color: var(--primary); outline: none; }
+        button { width: 100%; padding: 12px; background: var(--primary); color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: opacity 0.3s; }
+        button:disabled { opacity: 0.6; cursor: not-allowed; }
+        #response-container { margin-top: 25px; display: none; }
+        pre { background: #272822; color: #f8f8f2; padding: 15px; border-radius: 6px; overflow-x: auto; font-size: 13px; line-height: 1.5; }
+        .status-tag { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold; margin-bottom: 10px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
     </style>
 </head>
 <body>
-    <div class="card">
-        <h2>Retreaver Ping Test</h2>
-        <input type="text" id="phone" placeholder="Enter Caller Number (e.g. +1234567890)">
-        <button onclick="firePing()">Fire RTB Ping</button>
-        <div id="result"></div>
+    <div class="container">
+        <h2>RTB Ping Tester</h2>
+        <div class="form-group">
+            <label for="caller_number">Caller Phone Number</label>
+            <input type="text" id="caller_number" placeholder="+15550001234" value="+1">
+        </div>
+        <button id="send-btn" onclick="sendPing()">Send RTB Ping</button>
+
+        <div id="response-container">
+            <div id="status-label" class="status-tag"></div>
+            <pre id="json-output"></pre>
+        </div>
     </div>
 
     <script>
-        async function firePing() {
-            const num = document.getElementById('phone').value;
-            const resDiv = document.getElementById('result');
-            resDiv.style.display = "block";
-            resDiv.innerText = "Pinging...";
+        async function sendPing() {
+            const btn = document.getElementById('send-btn');
+            const output = document.getElementById('json-output');
+            const container = document.getElementById('response-container');
+            const statusLabel = document.getElementById('status-label');
+            const number = document.getElementById('caller_number').value;
+
+            // UI Reset
+            btn.disabled = true;
+            btn.innerText = "Processing...";
+            container.style.display = "block";
+            output.innerText = "Waiting for Retreaver...";
 
             try {
-                const response = await fetch(`/api/ping?caller_number=${encodeURIComponent(num)}`);
+                // We call our own local API route (the proxy)
+                const response = await fetch(`/api/ping?caller_number=${encodeURIComponent(number)}`);
                 const data = await response.json();
-                resDiv.innerText = JSON.stringify(data, null, 2);
+
+                statusLabel.innerText = response.ok ? "SUCCESS" : "ERROR";
+                statusLabel.className = `status-tag ${response.ok ? 'success' : 'error'}`;
+                output.innerText = JSON.stringify(data, null, 2);
             } catch (err) {
-                resDiv.innerText = "Error: " + err.message;
+                statusLabel.innerText = "CONNECTION FAILED";
+                statusLabel.className = "status-tag error";
+                output.innerText = "Could not connect to the proxy server.";
+            } finally {
+                btn.disabled = false;
+                btn.innerText = "Send RTB Ping";
             }
         }
     </script>
