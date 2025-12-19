@@ -13,20 +13,20 @@ app.get('/api/ping', async (req, res) => {
     const caller_number = req.query.caller_number;
     
     // Credentials
-    const API_KEY = "5de2b0c6-7b91-4bad-82c3-b3dab875ebd8";
+    const KEY = "5de2b0c6-7b91-4bad-82c3-b3dab875ebd8";
     const PUB_ID = "ADO0048";
     
-    // FIXED URL: Added the '&' and used the verified RTB subdomain
-    const targetUrl = `https://rtb.retreaver.com/rtbs.json?key=${API_KEY}&publisher_id=${PUB_ID}&caller_number=${encodeURIComponent(caller_number)}`;
-
-    console.log(`Outgoing Ping: ${targetUrl}`);
+    // Using the RTB subdomain with the essential publisher_id
+    const targetUrl = `https://rtb.retreaver.com/rtbs.json?publisher_id=${PUB_ID}&caller_number=${encodeURIComponent(caller_number)}`;
 
     try {
         const response = await fetch(targetUrl, {
-            method: 'GET',
+            method: 'GET', // Some setups require POST, but RTB is usually GET
             headers: {
                 'Accept': 'application/json',
-                'User-Agent': 'RetreaverProxy/1.0' 
+                // This header is the secret to bypassing the "Sign In" redirect
+                'X-Retreaver-Api-Key': KEY,
+                'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64)'
             }
         });
 
@@ -36,19 +36,18 @@ app.get('/api/ping', async (req, res) => {
             const data = JSON.parse(text);
             res.json(data);
         } catch (e) {
-            // If Retreaver sends HTML, this catches it and tells us why
-            console.error("Retreaver returned non-JSON response.");
-            res.status(response.status).json({ 
-                error: "Retreaver Error", 
-                status: response.status,
-                details: text.substring(0, 200) // Show first bit of error
+            // If it's still HTML (the login page), we will send the text back to see it
+            res.status(401).json({ 
+                error: "Authentication Error", 
+                message: "Retreaver is still requesting a login. Check your Postback Key.",
+                preview: text.substring(0, 100) 
             });
         }
     } catch (error) {
-        res.status(500).json({ error: "Server connection failed", message: error.message });
+        res.status(500).json({ error: "System Error", details: error.message });
     }
 });
 
 app.listen(PORT, () => {
-    console.log(`Server is running on port ${PORT}`);
+    console.log(`Server running on port ${PORT}`);
 });
